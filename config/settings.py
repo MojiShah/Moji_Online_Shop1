@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_spectacular',
+    'rest_framework_simplejwt.token_blacklist',
     
     #Local apps
     'apps.accounts.apps.AccountsConfig',
@@ -169,7 +170,9 @@ SIMPLE_JWT = {
 
     "ROTATE_REFRESH_TOKENS": True,
 
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,
+    
+    "UPDATE_LAST_LOGIN": False,
 
     "AUTH_HEADER_TYPES": ("Bearer",),
 }

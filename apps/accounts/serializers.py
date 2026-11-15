@@ -63,3 +63,7 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         data["user"] = UserProfileSerializer(self.user).data 
         return data  # Include user profile data in the response
+    
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField(write_only=True,trim_whitespace=False)
+    
