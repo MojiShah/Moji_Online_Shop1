@@ -67,3 +67,13 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField(write_only=True,trim_whitespace=False)
     
+
+#for API documentation
+class AuthTokenResponseSerializer(serializers.Serializer):
+    access = serializers.CharField()
+    refresh = serializers.CharField(required=False)
+    user = UserProfileSerializer(required=False)
+
+
+class LogoutResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()

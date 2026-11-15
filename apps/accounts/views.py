@@ -10,8 +10,14 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.settings import api_settings
 
 from drf_spectacular.utils import extend_schema
-from .serializers import (RegisterSerializer,UserProfileSerializer,EmailTokenObtainPairSerializer,LogoutSerializer)
-
+from .serializers import (
+    RegisterSerializer,
+    UserProfileSerializer,
+    EmailTokenObtainPairSerializer,
+    LogoutSerializer,
+    AuthTokenResponseSerializer,
+    LogoutResponseSerializer,
+)
 # Create your views here.
 class RegisterAPIView(APIView):
     permission_classes=[AllowAny]
@@ -36,7 +42,10 @@ class RegisterAPIView(APIView):
         
 class LoginAPIView(APIView):
     permission_classes=[AllowAny]
-    @extend_schema(request=EmailTokenObtainPairSerializer)
+    @extend_schema(
+    request=EmailTokenObtainPairSerializer,
+    responses={200: AuthTokenResponseSerializer}
+    )   
     def post(self,request):
         serializer = EmailTokenObtainPairSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -52,7 +61,10 @@ class ProfileAPIView(APIView):
     
 class TokenRefreshAPIView(APIView):
     permission_classes=[AllowAny]
-    @extend_schema(request=TokenRefreshSerializer)
+    @extend_schema(
+    request=TokenRefreshSerializer,
+    responses={200: AuthTokenResponseSerializer}
+    )
     def post(self,request):
         serializer = TokenRefreshSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -61,12 +73,9 @@ class TokenRefreshAPIView(APIView):
 class LogoutAPIView(APIView):
     permission_classes=[IsAuthenticated]
     @extend_schema(
-        request=LogoutSerializer,
-        responses={200 : {
-                'type': 'object',
-                'properties': {'detail': {type: 'string',}}
-            }},
-        )
+    request=LogoutSerializer,
+    responses={200: LogoutResponseSerializer}
+    )
     def post(self,request):
         serializer = LogoutSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

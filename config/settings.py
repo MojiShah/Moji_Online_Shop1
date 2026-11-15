@@ -178,16 +178,14 @@ SIMPLE_JWT = {
 }
 
 
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "Moji Online Shop API",
-
     "DESCRIPTION": "E-commerce Backend API Documentation",
-
     "VERSION": "1.0.0",
-
     "SERVE_INCLUDE_SCHEMA": False,
 
-    "COMPONENTS": {
+    "APPEND_COMPONENTS": {
         "securitySchemes": {
             "BearerAuth": {
                 "type": "http",

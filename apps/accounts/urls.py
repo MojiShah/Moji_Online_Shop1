@@ -6,6 +6,6 @@ urlpatterns = [
     path("login/",LoginAPIView.as_view(),name="login"),
     path("profile/",ProfileAPIView.as_view(),name="profile"),
     path("token/refresh/",TokenRefreshAPIView.as_view(),name="token_refresh"),
-    # path("logout/",LogoutAPIView.as_view(),name="logout")
+    path("logout/",LogoutAPIView.as_view(),name="logout")
 ]
 
