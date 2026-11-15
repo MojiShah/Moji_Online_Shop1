@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     
     #Third-party apps
     'rest_framework',
+    'rest_framework_simplejwt',
+    'drf_spectacular',
     
     #Local apps
     'apps.accounts.apps.AccountsConfig',
@@ -181,4 +183,20 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
 
     "SERVE_INCLUDE_SCHEMA": False,
+
+    "COMPONENTS": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            }
+        }
+    },
+
+    "SECURITY": [
+        {
+            "BearerAuth": []
+        }
+    ],
 }

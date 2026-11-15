@@ -18,40 +18,45 @@ class UserProfileSerializer(serializers.ModelSerializer):
         )
         read_only_fields = fields  # Make all fields read-only for the profile serializer
         
+
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
-    confirm_password = serializers.CharField(write_only=True, required=True)
-    
+
+    password = serializers.CharField(write_only=True,validators=[validate_password])
+    password_confirm = serializers.CharField(write_only=True)
+
     class Meta:
         model = CustomUser
         fields = (
             "email",
-            "phone_number",
-            "first_name",
-            "last_name",
             "password",
             "password_confirm",
+            "first_name",
+            "last_name",
+            "phone_number",
         )
-        
-        def validate_email(self,value):
-            email = value.strip().lower()
-            if CustomUser.objects.filter(email__iexact=email).exists():
-                raise serializers.ValidationError("A user with this email already exists.")
-            
-            return email
-        
-        def validate(self, attrs):
-            if attrs["password"] != attrs["password_confirm"]:
-                raise serializers.ValidationError({
-                    "password_confirm": "Password fields didn't match."})
-                
-            return attrs
-        
-        def create(self, validated_data):
-            validated_data.pop("password_confirm")  # Remove the confirm password field
-            password = validated_data.pop("password")
-            user = CustomUser.objects.create_user(password=password, **validated_data)
-            return user
+
+    def validate_email(self, value):
+
+        email = value.strip().lower()
+        if CustomUser.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("This email is already registered.")
+        return email
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Passwords do not match."})
+        return attrs
+
+    def create(self, validated_data):
+
+        validated_data.pop("password_confirm")
+        password = validated_data.pop("password")
+        user = CustomUser.objects.create_user(
+            password=password,
+            **validated_data
+        )
+        return user
+
 
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
