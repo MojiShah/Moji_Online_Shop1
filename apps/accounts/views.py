@@ -8,6 +8,10 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.token_blacklist.models import (
+    OutstandingToken,
+    BlacklistedToken,
+)
 
 from drf_spectacular.utils import extend_schema
 from .serializers import (
@@ -17,6 +21,8 @@ from .serializers import (
     LogoutSerializer,
     AuthTokenResponseSerializer,
     LogoutResponseSerializer,
+    ChangePasswordSerializer,
+    MessageResponseSerializer
 )
 # Create your views here.
 class RegisterAPIView(APIView):
@@ -92,3 +98,26 @@ class LogoutAPIView(APIView):
             raise ValidationError({"refresh": "Invalid, expired or blacklisted refresh token."})
         
         return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+    
+class ChangePasswordAPIView(APIView):
+    permission_classes=[IsAuthenticated]
+    @extend_schema(
+    request=ChangePasswordSerializer,
+    responses={200: MessageResponseSerializer}
+    )
+    def post(self,request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        
+        user = request.user
+        
+        # Set new password securely
+        user.set_password(serializer.validated_data['new_password'])
+        user.save(update_fields=["password"])
+        
+        # Revoke all user's refresh tokens
+        outstanding_tokens = OutstandingToken.objects.filter(user=user)
+        for outstanding_token in outstanding_tokens:
+            BlacklistedToken.objects.get_or_create(token=outstanding_token)
+        
+        return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
