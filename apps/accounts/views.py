@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
+
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
@@ -14,6 +15,9 @@ from rest_framework_simplejwt.token_blacklist.models import (
 )
 
 from drf_spectacular.utils import extend_schema
+
+
+
 from .serializers import (
     RegisterSerializer,
     UserProfileSerializer,
@@ -22,8 +26,11 @@ from .serializers import (
     AuthTokenResponseSerializer,
     LogoutResponseSerializer,
     ChangePasswordSerializer,
-    MessageResponseSerializer
+    MessageResponseSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetConfirmSerializer
 )
+
 # Create your views here.
 class RegisterAPIView(APIView):
     permission_classes=[AllowAny]
@@ -121,3 +128,4 @@ class ChangePasswordAPIView(APIView):
             BlacklistedToken.objects.get_or_create(token=outstanding_token)
         
         return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
+    

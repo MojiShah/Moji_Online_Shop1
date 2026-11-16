@@ -1,6 +1,8 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import CustomUser
 
@@ -107,8 +109,45 @@ class ChangePasswordSerializer(serializers.Serializer):
         
         return attrs
     
-
+#for change password API documentation 
 class MessageResponseSerializer(serializers.Serializer):
     detail = serializers.CharField()
-
+    
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    def validate_email(self, value):
+        email = value.strip().lower()
         
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True, required=True)
+    new_password_confirm = serializers.CharField(write_only=True, required=True)
+    
+    def validate(self, attrs):
+        try:
+            uid = urlsafe_base64_decode(attrs['uid']).decode()
+            user = CustomUser.objects.get(pk=uid,is_active=True)
+            
+        except (ValueError, TypeError, UnicodeDecodeError):
+            raise serializers.ValidationError({ "uid": "Invalid reset link."})
+        
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError({ "uid": "Invalid reset link."})
+        
+        # Verify reset token
+        if not default_token_generator.check_token(user, attrs['token']):
+            raise serializers.ValidationError({ "token": "Invalid or expired reset link."})
+        
+        # Check password confirmation
+        if attrs['new_password'] != attrs['new_password_confirm']:
+            raise serializers.ValidationError({"new_password_confirm": "New passwords do not match."})
+        
+        # Validate password strength
+        try:
+            validate_password(attrs['new_password'], user=user)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError({"new_password": list(e.messages)})
+        
+        attrs['user'] = user  # Attach the user to the validated data for use in the view
+        return attrs
