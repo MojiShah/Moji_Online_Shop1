@@ -116,7 +116,7 @@ class MessageResponseSerializer(serializers.Serializer):
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
     def validate_email(self, value):
-        email = value.strip().lower()
+        return value.strip().lower()
         
 class PasswordResetConfirmSerializer(serializers.Serializer):
     uid = serializers.CharField()

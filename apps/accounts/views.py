@@ -2,7 +2,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny,IsAuthenticated
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError, APIException
+from rest_framework.throttling import ScopedRateThrottle
 
 
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
@@ -16,7 +17,11 @@ from rest_framework_simplejwt.token_blacklist.models import (
 
 from drf_spectacular.utils import extend_schema
 
+from .services.email_service import send_password_reset_email
+import logging
+logger = logging.getLogger(__name__)
 
+from .models import CustomUser
 
 from .serializers import (
     RegisterSerializer,
@@ -129,3 +134,70 @@ class ChangePasswordAPIView(APIView):
         
         return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
     
+
+class PasswordResetRequestAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_reset_request"
+
+    @extend_schema(
+        request=PasswordResetRequestSerializer,
+        responses={200: MessageResponseSerializer}
+    )
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        user = CustomUser.objects.filter(
+            email__iexact=email,
+            is_active=True
+        ).first()
+
+        # Send email only if an active account exists
+        if user:
+            try:
+                send_password_reset_email(user)
+            except Exception:
+                # Do not expose account or SMTP details
+                raise APIException("Unable to process your request right now.")
+        return Response(
+            {
+                "detail": (
+                    "If an active account exists for this email, "
+                    "a password reset link will be sent."
+                )
+            },
+            status=status.HTTP_200_OK
+        )
+
+            
+class PasswordResetConfirmAPIView(APIView):
+    permission_classes = [AllowAny]
+    
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_reset_confirm"
+    
+    @extend_schema(
+        request=PasswordResetConfirmSerializer,
+        responses={200:MessageResponseSerializer}
+    )
+    
+    def post(request,self):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+        new_password = serializer.validated_data["new_password"]
+        
+        #Set new password securely
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+        
+        # Revoke all existing refresh tokens
+        outstanding_tokens = OutstandingToken.objects.filter(user=user)
+        for outstanding_token in outstanding_tokens:
+            BlacklistedToken.objects.get_or_create(token = outstanding_token)
+        
+        return Response({"detail": "Password has been reset successfully."},status=status.HTTP_200_OK)
+    
+

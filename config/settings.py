@@ -150,6 +150,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.CustomUser'  # Use the custom user model
 
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -160,7 +161,13 @@ REST_FRAMEWORK = {
     ],
 
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+
+    "DEFAULT_THROTTLE_RATES": {
+        "password_reset_request": "5/hour",
+        "password_reset_confirm": "10/hour",
+    },
 }
+
 
 
 SIMPLE_JWT = {
