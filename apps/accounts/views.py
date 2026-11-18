@@ -18,6 +18,7 @@ from rest_framework_simplejwt.token_blacklist.models import (
 from drf_spectacular.utils import extend_schema
 
 from .services.email_service import send_password_reset_email
+from .services.verification_service import send_verification_email
 import logging
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,8 @@ from .serializers import (
     ChangePasswordSerializer,
     MessageResponseSerializer,
     PasswordResetRequestSerializer,
-    PasswordResetConfirmSerializer
+    PasswordResetConfirmSerializer,
+    EmailVerificationConfirmSerializer
 )
 
 # Create your views here.
@@ -183,7 +185,7 @@ class PasswordResetConfirmAPIView(APIView):
         responses={200:MessageResponseSerializer}
     )
     
-    def post(request,self):
+    def post(self,request):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
@@ -200,4 +202,22 @@ class PasswordResetConfirmAPIView(APIView):
         
         return Response({"detail": "Password has been reset successfully."},status=status.HTTP_200_OK)
     
-
+class EmailVerificationAPIView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "email_verification"
+    
+    @extend_schema(
+        request=EmailVerificationConfirmSerializer,
+        responses={
+            200: MessageResponseSerializer
+        }
+    )
+    
+    def post(self,request):
+        serializer = EmailVerificationConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+        user.is_email_verified = True
+        user.save(update_field=['is_email_verified'])
+        return Response({"detail": "Email verified successfully."},status=status.HTTP_200_OK)

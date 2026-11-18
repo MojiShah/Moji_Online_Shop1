@@ -219,3 +219,9 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 PASSWORD_RESET_FRONTEND_URL = os.environ.get("PASSWORD_RESET_FRONTEND_URL", "http://localhost:3000/reset-password")
 PASSWORD_RESET_TIMEOUT = 1800
+
+#email verification
+EMAIL_VERIFICATION_FRONTEND_URL = os.getenv(
+    "EMAIL_VERIFICATION_FRONTEND_URL",
+    "http://localhost:3000/verify-email"
+)

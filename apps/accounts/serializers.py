@@ -4,6 +4,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError as DjangoValidationError
+from .services.verification_service import email_verification_token
 from .models import CustomUser
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -150,4 +151,27 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
             raise serializers.ValidationError({"new_password": list(e.messages)})
         
         attrs['user'] = user  # Attach the user to the validated data for use in the view
+        return attrs
+    
+class EmailVerificationConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField(required=True)
+    token = serializers.CharField(required=True)
+    
+    def validate(self, attrs):
+        try:
+            uid = urlsafe_base64_decode(attrs["uid"]).decode()
+            user = CustomUser.objects.get(pk=uid,is_active=True)
+        except (ValueError,TypeError,UnicodeDecodeError):
+            raise serializers.ValidationError({ "uid": "Invalid verification link."})
+        except CustomUser.DoesNotExist:
+            raise serializers.ValidationError({"uid": "Invalid verification link."})
+
+        if user.is_email_verified():
+            raise serializers.ValidationError({"token": "Email has already been verified."})
+
+        # Verify email token
+        if not email_verification_token.check_token(user,attrs["token"]):
+            raise serializers.ValidationError({"token": "Invalid or expired verification link."})
+
+        attrs["user"] = user
         return attrs
