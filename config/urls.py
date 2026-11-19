@@ -12,4 +12,7 @@ urlpatterns = [
 
     # Accounts API
     path("api/v1/accounts/",include("apps.accounts.urls")),
+    
+    # Catalog Api
+    path("api/v1/catalog/",include("apps.catalog.urls")),
 ]

@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     
     #Local apps
     'apps.accounts.apps.AccountsConfig',
+    'apps.catalog.apps.CatalogConfig',
 ]
 
 MIDDLEWARE = [
