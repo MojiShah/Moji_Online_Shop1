@@ -35,7 +35,8 @@ from .serializers import (
     MessageResponseSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
-    EmailVerificationConfirmSerializer
+    EmailVerificationConfirmSerializer,
+    EmailVerificationResendSerializer,
 )
 
 # Create your views here.
@@ -54,6 +55,15 @@ class RegisterAPIView(APIView):
         # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+        #for activate account email
+        try:
+            sent = send_verification_email(user)
+            if not sent:
+                logger.warning("Verification email was not sent. User ID: %s",user.pk)
+
+        except Exception:
+            logger.exception("Failed to send verification email. User ID: %s",user.pk)
+        
         response_serializer = UserProfileSerializer(user)
         return Response(
             response_serializer.data,
@@ -203,21 +213,53 @@ class PasswordResetConfirmAPIView(APIView):
         return Response({"detail": "Password has been reset successfully."},status=status.HTTP_200_OK)
     
 class EmailVerificationAPIView(APIView):
+
     permission_classes = [AllowAny]
+
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "email_verification"
-    
+
     @extend_schema(
         request=EmailVerificationConfirmSerializer,
-        responses={
-            200: MessageResponseSerializer
-        }
+        responses={200: MessageResponseSerializer}
     )
-    
-    def post(self,request):
+    def post(self, request):
         serializer = EmailVerificationConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data["user"]
         user.is_email_verified = True
-        user.save(update_field=['is_email_verified'])
-        return Response({"detail": "Email verified successfully."},status=status.HTTP_200_OK)
+        user.save(update_fields=["is_email_verified"])
+
+        return Response(
+            {"detail": "Email verified successfully."},
+            status=status.HTTP_200_OK
+        )
+        
+        
+class EmailVerificationResendAPIView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "email_verification_resend"
+    
+    @extend_schema(
+        request=EmailVerificationResendSerializer,
+        responses={200: MessageResponseSerializer}
+    )
+    
+    def post(self,request):
+        serializer = EmailVerificationResendSerializer(data = request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"]
+        user = CustomUser.objects.filter(
+            email__iexact=email,
+            is_acive=True,
+            is_email_verified=True
+        ).first()
+
+        if user:
+            try:
+                sent = send_verification_email(user)
+                if not sent:
+                    logger.warning("Verification resend failed. User ID: %s",user.pk)
+            except Exception:
+                logger.exception("Verification resend error. User ID: %s",user.pk)

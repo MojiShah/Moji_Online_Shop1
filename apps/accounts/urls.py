@@ -8,6 +8,8 @@ from .views import (
     ChangePasswordAPIView,
     PasswordResetRequestAPIView,
     PasswordResetConfirmAPIView,
+    EmailVerificationAPIView,
+    EmailVerificationResendAPIView,
     )
 
 urlpatterns = [
@@ -19,5 +21,7 @@ urlpatterns = [
     path("change-password/",ChangePasswordAPIView.as_view(),name="change_password"),
     path("password-reset/",PasswordResetRequestAPIView.as_view(),name="password-reset"),
     path("password-reset/confirm/",PasswordResetConfirmAPIView.as_view(),name="password-reset-confirm"),
+    path("email/verify/",EmailVerificationAPIView.as_view(),name="email_verify"),
+    path("email/verification/resend/",EmailVerificationResendAPIView.as_view(),name="email_verification_resend"),
 ]
 

@@ -65,6 +65,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
+        
+        # Check email verification
+        # if not self.user.is_email_verified:
+        #     raise serializers.ValidationError({
+        #         "detail": "Please verify your email address before logging in."
+        #     })
+
         data["user"] = UserProfileSerializer(self.user).data 
         return data  # Include user profile data in the response
     
@@ -154,24 +161,36 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         return attrs
     
 class EmailVerificationConfirmSerializer(serializers.Serializer):
+
     uid = serializers.CharField(required=True)
     token = serializers.CharField(required=True)
-    
+
     def validate(self, attrs):
+
         try:
             uid = urlsafe_base64_decode(attrs["uid"]).decode()
             user = CustomUser.objects.get(pk=uid,is_active=True)
-        except (ValueError,TypeError,UnicodeDecodeError):
-            raise serializers.ValidationError({ "uid": "Invalid verification link."})
+
+        except (ValueError, TypeError, UnicodeDecodeError):
+            raise serializers.ValidationError({"uid": "Invalid verification link."})
+
         except CustomUser.DoesNotExist:
             raise serializers.ValidationError({"uid": "Invalid verification link."})
 
-        if user.is_email_verified():
+        # Check if already verified
+        if user.is_email_verified:
             raise serializers.ValidationError({"token": "Email has already been verified."})
 
-        # Verify email token
+        # Verify token
         if not email_verification_token.check_token(user,attrs["token"]):
             raise serializers.ValidationError({"token": "Invalid or expired verification link."})
-
+        
         attrs["user"] = user
         return attrs
+
+class EmailVerificationResendSerializer(serializers.Serializer):
+
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        return value.strip().lower()
